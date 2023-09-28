@@ -91,9 +91,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
+    await query.edit_message_reply_markup(reply_markup=None)
     await query.answer()
-    translation = ts.translate_text(query.message.text)
-    await query.message.reply_text(text=translation)
+    try:
+        message = ts.translate_text(query.message.text)
+    except Exception as e:
+        message = f"Sorry, an error occurred when translating 🥲\n{e}"
+    await query.message.reply_text(message)
 
 
 def main():
