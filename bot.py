@@ -3,13 +3,16 @@ import tempfile
 
 import openai
 from pydub import AudioSegment
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     ContextTypes,
     MessageHandler,
+    CallbackQueryHandler,
     filters,
 )
+
+import translators as ts
 
 
 # Replace 'YOUR_BOT_TOKEN' with your actual bot token
@@ -69,11 +72,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             audio_file = open(output_file, "rb")
             transcript = openai.Audio.transcribe("whisper-1", audio_file)
 
-            await update.message.reply_text(transcript["text"])
+            keyboard = [
+                [
+                    InlineKeyboardButton("Translate to 🇬🇧", callback_data="en"),
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            await update.message.reply_text(
+                transcript["text"], reply_markup=reply_markup
+            )
     else:
         await update.message.reply_text(
             "Send me or forward me a voice message and I will transcribe it for you 💬"
         )
+
+
+async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Parses the CallbackQuery and updates the message text."""
+    query = update.callback_query
+    await query.answer()
+    translation = ts.translate_text(query.message.text)
+    await query.message.reply_text(text=translation)
 
 
 def main():
@@ -90,6 +110,8 @@ def main():
             filters.VOICE | filters.VIDEO_NOTE | filters.VIDEO, handle_message
         )
     )
+
+    application.add_handler(CallbackQueryHandler(translate))
 
     # Add a /start command handler
     application.add_handler(
