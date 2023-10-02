@@ -70,18 +70,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
 
             audio_file = open(output_file, "rb")
-            transcript = openai.Audio.transcribe("whisper-1", audio_file)
-
-            keyboard = [
-                [
-                    InlineKeyboardButton("Translate to 🇬🇧", callback_data="en"),
+            try:
+                transcript = openai.Audio.transcribe("whisper-1", audio_file)
+                message = transcript["text"]
+                keyboard = [
+                    [
+                        InlineKeyboardButton("Translate to 🇬🇧", callback_data="en"),
+                    ]
                 ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
+                reply_markup = InlineKeyboardMarkup(keyboard)
+            except Exception as e:
+                message = str(e)
+                reply_markup = None
 
-            await update.message.reply_text(
-                transcript["text"], reply_markup=reply_markup
-            )
+            await update.message.reply_text(message, reply_markup=reply_markup)
     else:
         await update.message.reply_text(
             "Send me or forward me a voice message and I will transcribe it for you 💬"
