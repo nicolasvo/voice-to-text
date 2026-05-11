@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-import openai
+from groq import Groq
 from pydub import AudioSegment
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -15,8 +15,8 @@ from telegram.ext import (
 import translators as ts
 
 
-# Replace 'YOUR_BOT_TOKEN' with your actual bot token
 TOKEN = os.getenv("BOT_API_TOKEN")
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -69,16 +69,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 f"Conversion complete. {input_file} has been converted to {output_file}."
             )
 
-            audio_file = open(output_file, "rb")
             try:
-                transcript = openai.Audio.transcribe("whisper-1", audio_file)
-                message = transcript["text"]
-                keyboard = [
-                    [
-                        InlineKeyboardButton("Translate to 🇬🇧", callback_data="en"),
-                    ]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
+                with open(output_file, "rb") as audio_file:
+                    transcript = groq_client.audio.transcriptions.create(
+                        file=(os.path.basename(output_file), audio_file.read()),
+                        model="whisper-large-v3-turbo",
+                    )
+                message = transcript.text
+                # keyboard = [
+                #     [
+                #         InlineKeyboardButton("Translate to 🇬🇧", callback_data="en"),
+                #     ]
+                # ]
+                # reply_markup = InlineKeyboardMarkup(keyboard)
+                reply_markup = None
             except Exception as e:
                 message = str(e)
                 reply_markup = None

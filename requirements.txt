@@ -1,4 +1,0 @@
-openai
-pydub
-python-telegram-bot
-translators
