@@ -92,13 +92,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
 
 
+TRANSLATORS = ["bing", "google", "alibaba"]
+
+
+def translate_with_retry(text: str, max_attempts: int = 3) -> str:
+    last_error: Exception | None = None
+    for attempt in range(max_attempts):
+        translator = TRANSLATORS[attempt % len(TRANSLATORS)]
+        try:
+            result = ts.translate_text(text, translator=translator, to_language="en")
+        except Exception as e:
+            last_error = e
+            continue
+        if result and result.strip() != text.strip():
+            return result
+    if last_error is not None:
+        raise last_error
+    return text
+
+
 async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
     await query.edit_message_reply_markup(reply_markup=None)
     await query.answer()
     try:
-        message = ts.translate_text(query.message.text)
+        message = translate_with_retry(query.message.text)
     except Exception as e:
         message = f"Sorry, an error occurred when translating 🥲\n{e}"
     await query.message.reply_text(message)
