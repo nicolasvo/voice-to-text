@@ -6,8 +6,16 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("ffmpeg")
     .pip_install(
-        "faster-whisper==1.0.3",
-        "ctranslate2==4.4.0",
+        "faster-whisper==1.1.1",
+        "ctranslate2==4.5.0",
+        "nvidia-cudnn-cu12==9.1.0.70",
+        "nvidia-cublas-cu12",
+        "requests",
+    )
+    .env(
+        {
+            "LD_LIBRARY_PATH": "/usr/local/lib/python3.11/site-packages/nvidia/cudnn/lib:/usr/local/lib/python3.11/site-packages/nvidia/cublas/lib"
+        }
     )
 )
 
@@ -18,7 +26,7 @@ CACHE_DIR = "/cache"
 
 
 @app.cls(
-    gpu="A10G",
+    gpu="T4",
     scaledown_window=300,
     timeout=600,
     volumes={CACHE_DIR: model_cache},
