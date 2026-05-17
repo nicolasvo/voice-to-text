@@ -75,12 +75,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     audio_bytes = audio_file.read()
                 result = await whisper.transcribe.remote.aio(audio_bytes)
                 message = result["text"]
-                if result.get("language", "en") != "en":
+                reply_markup = None
+                if not message.strip():
+                    message = "I couldn't hear any words in this 🤔 (just silence, noise, or music?)"
+                elif result.get("language", "en") != "en":
                     reply_markup = InlineKeyboardMarkup(
                         [[InlineKeyboardButton("Translate to 🇬🇧", callback_data="en")]]
                     )
-                else:
-                    reply_markup = None
             except Exception as e:
                 message = str(e)
                 reply_markup = None
