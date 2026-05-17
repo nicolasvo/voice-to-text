@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from groq import Groq
+import modal
 from pydub import AudioSegment
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -16,7 +16,8 @@ import translators as ts
 
 
 TOKEN = os.getenv("BOT_API_TOKEN")
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+WhisperCls = modal.Cls.from_name("voice-to-text-whisper", "Whisper")
+whisper = WhisperCls()
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -71,18 +72,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             try:
                 with open(output_file, "rb") as audio_file:
-                    transcript = groq_client.audio.transcriptions.create(
-                        file=(os.path.basename(output_file), audio_file.read()),
-                        model="whisper-large-v3-turbo",
+                    audio_bytes = audio_file.read()
+                result = await whisper.transcribe.remote.aio(audio_bytes)
+                message = result["text"]
+                if result.get("language", "en") != "en":
+                    reply_markup = InlineKeyboardMarkup(
+                        [[InlineKeyboardButton("Translate to 🇬🇧", callback_data="en")]]
                     )
-                message = transcript.text
-                # keyboard = [
-                #     [
-                #         InlineKeyboardButton("Translate to 🇬🇧", callback_data="en"),
-                #     ]
-                # ]
-                # reply_markup = InlineKeyboardMarkup(keyboard)
-                reply_markup = None
+                else:
+                    reply_markup = None
             except Exception as e:
                 message = str(e)
                 reply_markup = None
