@@ -56,6 +56,7 @@ class Whisper:
                 path,
                 beam_size=5,
                 vad_filter=True,
+                initial_prompt="Hello, welcome. This is a transcript with proper punctuation, including commas, periods, and question marks. Isn't it nice?",
             )
             text = "".join(seg.text for seg in segments).strip()
         finally:
